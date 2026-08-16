@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>پنل شبکه</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --void:#0C0F14;
+    --panel:#151920;
+    --panel-raised:#1B212B;
+    --hairline:#262B35;
+    --amber:#F5A623;
+    --amber-dim:rgba(245,166,35,.14);
+    --ink:#E7E9EC;
+    --ink-muted:#8B93A1;
+    --danger:#E5484D;
+    --success:#34D399;
+    --font-body:'Vazirmatn',Tahoma,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--font-body);
+    background:var(--void);
+    background-image:radial-gradient(circle at 15% 0%, rgba(245,166,35,.05), transparent 40%);
+    color:var(--ink);
+    min-height:100vh;
+  }
+  .mono{font-family:var(--font-mono);}
+  .hidden{display:none !important;}
+
+  /* ---------- Login ---------- */
+  #login-view{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .login-card{
+    width:100%;
+    max-width:340px;
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    border-radius:16px;
+    padding:28px;
+    text-align:center;
+  }
+  .login-card .glyph{
+    width:44px;height:44px;margin:0 auto 16px;
+    border-radius:12px;
+    background:var(--amber-dim);
+    border:1px solid var(--amber);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--amber);font-family:var(--font-mono);font-weight:700;
+  }
+  .login-card h1{font-size:16px;margin:0 0 20px;color:var(--ink-muted);font-weight:500;}
+  .field{
+    width:100%;padding:12px 14px;border-radius:10px;
+    border:1px solid var(--hairline);background:var(--void);
+    color:var(--ink);font-family:var(--font-body);font-size:14px;margin-bottom:10px;
+    outline:none;transition:border-color .15s;
+  }
+  .field:focus{border-color:var(--amber);}
+  .btn{
+    border:none;border-radius:10px;padding:11px 18px;cursor:pointer;
+    font-family:var(--font-body);font-size:13.5px;font-weight:600;
+    transition:transform .1s,filter .15s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--amber);color:#1A1300;width:100%;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-ghost{background:var(--panel-raised);color:var(--ink);}
+  .btn-danger{background:transparent;color:var(--danger);border:1px solid rgba(229,72,77,.4);}
+  .btn-danger:hover{background:rgba(229,72,77,.1);}
+  .error-text{color:var(--danger);font-size:12.5px;margin-top:8px;min-height:16px;}
+
+  /* ---------- Topbar ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:16px 22px;border-bottom:1px solid var(--hairline);
+    flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-dot{
+    width:9px;height:9px;border-radius:50%;background:var(--amber);
+    box-shadow:0 0 0 4px var(--amber-dim);
+  }
+  .brand h1{font-size:15px;font-weight:600;margin:0;letter-spacing:.2px;}
+  #pulse-canvas{width:150px;height:34px;opacity:.85;}
+  .aggregate{display:flex;gap:22px;}
+  .agg-item{text-align:center;}
+  .agg-num{display:block;font-family:var(--font-mono);font-size:15px;font-weight:700;color:var(--ink);}
+  .agg-label{display:block;font-size:10.5px;color:var(--ink-muted);margin-top:2px;}
+
+  /* ---------- Grid ---------- */
+  main{padding:20px;max-width:1080px;margin:0 auto;}
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+    gap:12px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:16px;
+    transition:border-color .15s,transform .12s;
+  }
+  .card:hover{border-color:#333a48;}
+
+  .card-add{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:8px;cursor:pointer;color:var(--ink-muted);
+    min-height:150px;border-style:dashed;
+  }
+  .card-add:hover{color:var(--amber);border-color:var(--amber);}
+  .add-glyph{
+    width:34px;height:34px;border-radius:50%;border:1px solid currentColor;
+    display:flex;align-items:center;justify-content:center;font-size:18px;
+  }
+
+  .card-head{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+  .status-dot{
+    width:8px;height:8px;border-radius:50%;background:var(--ink-muted);flex-shrink:0;
+  }
+  .status-dot.on{background:var(--success);}
+  .status-dot.on.pulsing{animation:pulse-dot 2s ease-in-out infinite;}
+  @keyframes pulse-dot{
+    0%,100%{box-shadow:0 0 0 0 rgba(52,211,153,.5);}
+    50%{box-shadow:0 0 0 5px rgba(52,211,153,0);}
+  }
+  .user-name{font-weight:600;font-size:14px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .is-disabled .user-name,.is-disabled .card-head{opacity:.45;}
+
+  .sparkline{width:100%;height:34px;display:block;margin-bottom:10px;}
+  .sparkline path{fill:none;stroke:var(--amber);stroke-width:1.6;}
+  .sparkline .fill{fill:url(#sparkGrad);stroke:none;}
+
+  .stat-row{
+    display:flex;justify-content:space-between;
+    font-size:11.5px;color:var(--ink-muted);margin-bottom:12px;
+  }
+  .stat-row .mono{color:var(--ink);}
+
+  .card-actions{display:flex;flex-wrap:wrap;gap:6px;}
+  .card-actions .btn{padding:7px 10px;font-size:11.5px;flex:1;}
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(6,8,11,.72);
+    display:flex;align-items:center;justify-content:center;padding:16px;z-index:50;
+    backdrop-filter:blur(3px);
+  }
+  .modal{
+    background:var(--panel);border:1px solid var(--hairline);border-radius:16px;
+    padding:22px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;position:relative;
+  }
+  .modal-close{
+    position:absolute;left:16px;top:16px;background:none;border:none;
+    color:var(--ink-muted);font-size:20px;cursor:pointer;line-height:1;
+  }
+  .modal h2{font-size:15px;margin:0 0 16px;padding-left:28px;}
+  .modal canvas{max-height:180px;margin-bottom:16px;}
+  .link-box{
+    background:var(--void);border:1px solid var(--hairline);border-radius:10px;
+    padding:10px;font-size:11px;word-break:break-all;color:var(--success);margin-bottom:14px;
+  }
+  .empty-hint{color:var(--ink-muted);font-size:12.5px;text-align:center;padding:20px 0;}
+
+  @media (prefers-reduced-motion: reduce){
+    .status-dot.pulsing{animation:none;}
+  }
+  @media (max-width:640px){
+    .aggregate{gap:14px;}
+    #pulse-canvas{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div id="login-view">
+  <div class="login-card">
+    <div class="glyph">V</div>
+    <h1>ورود به پنل شبکه</h1>
+    <input class="field" type="password" id="password" placeholder="رمز عبور" />
+    <button class="btn btn-primary" onclick="login()">ورود</button>
+    <div class="error-text" id="login-error"></div>
+  </div>
+</div>
+
+<div id="main-view" class="hidden">
+  <div class="topbar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <h1>پنل شبکه</h1>
+    </div>
+    <canvas id="pulse-canvas" width="300" height="68"></canvas>
+    <div class="aggregate">
+      <div class="agg-item"><span class="agg-num mono" id="agg-active">0</span><span class="agg-label">فعال</span></div>
+      <div class="agg-item"><span class="agg-num mono" id="agg-up">0</span><span class="agg-label">آپلود کل</span></div>
+      <div class="agg-item"><span class="agg-num mono" id="agg-down">0</span><span class="agg-label">دانلود کل</span></div>
+    </div>
+  </div>
+
+  <main>
+    <div class="grid" id="cards-grid"></div>
+  </main>
+</div>
+
+<!-- Add user modal -->
+<div class="modal-overlay hidden" id="add-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAdd()">×</button>
+    <h2>کاربر جدید</h2>
+    <input class="field" id="new-user-name" placeholder="نام کاربر" />
+    <button class="btn btn-primary" onclick="submitAdd()">ساخت کاربر</button>
+  </div>
+</div>
+
+<!-- Detail / chart modal -->
+<div class="modal-overlay hidden" id="detail-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDetail()">×</button>
+    <h2 id="detail-title"></h2>
+    <canvas id="detail-chart" height="160"></canvas>
+    <div class="link-box mono" id="detail-link"></div>
+    <button class="btn btn-ghost" style="width:100%" onclick="copyDetailLink()">کپی لینک کانفیگ</button>
+  </div>
+</div>
+
+<script>
+let usersCache = [];
+let detailChart = null;
+let currentDetailId = null;
+
+async function api(url, opts = {}) {
+  const res = await fetch(url, { ...opts, headers: { 'Content-Type': 'application/json', ...(opts.headers||{}) } });
+  if (res.status === 401) { showLogin(); throw new Error('unauthorized'); }
+  return res.json();
+}
+
+function showLogin(){
+  document.getElementById('login-view').classList.remove('hidden');
+  document.getElementById('main-view').classList.add('hidden');
+}
+function showMain(){
+  document.getElementById('login-view').classList.add('hidden');
+  document.getElementById('main-view').classList.remove('hidden');
+  loadUsers();
+  startPulse();
+}
+
+async function login(){
+  const password = document.getElementById('password').value;
+  try{
+    await api('/api/login', { method:'POST', body: JSON.stringify({ password }) });
+    showMain();
+  }catch{
+    document.getElementById('login-error').textContent = 'رمز اشتباه است';
+  }
+}
+document.getElementById('password').addEventListener('keydown', e=>{ if(e.key==='Enter') login(); });
+
+function openAdd(){ document.getElementById('add-overlay').classList.remove('hidden'); }
+function closeAdd(){ document.getElementById('add-overlay').classList.add('hidden'); document.getElementById('new-user-name').value=''; }
+async function submitAdd(){
+  const name = document.getElementById('new-user-name').value.trim();
+  if(!name) return;
+  await api('/api/users', { method:'POST', body: JSON.stringify({ name }) });
+  closeAdd();
+  loadUsers();
+}
+
+async function toggleUser(id){ await api('/api/users/'+id+'/toggle', { method:'PATCH' }); loadUsers(); }
+async function removeUser(id){
+  if(!confirm('این کاربر حذف شود؟')) return;
+  await api('/api/users/'+id, { method:'DELETE' });
+  loadUsers();
+}
+function copyLink(id){
+  const u = usersCache.find(x=>x.id===id);
+  if(!u) return;
+  navigator.clipboard.writeText(u.link);
+}
+function copyDetailLink(){
+  const u = usersCache.find(x=>x.id===currentDetailId);
+  if(u) navigator.clipboard.writeText(u.link);
+}
+
+function formatBytes(bytes){
+  if(!bytes) return '0MB';
+  const mb = bytes/1024/1024;
+  if(mb>1024) return (mb/1024).toFixed(2)+'GB';
+  return mb.toFixed(1)+'MB';
+}
+
+function sparklineSVG(points){
+  if(!points || points.length<2){
+    return '<svg class="sparkline" viewBox="0 0 100 30"><defs><linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F5A623" stop-opacity="0.35"/><stop offset="100%" stop-color="#F5A623" stop-opacity="0"/></linearGradient></defs></svg>';
+  }
+  const vals = points.map(p=>p.uplink+p.downlink);
+  const max = Math.max(...vals,1);
+  const step = 100/(vals.length-1);
+  const coords = vals.map((v,i)=>[i*step, 28 - (v/max)*26]);
+  const line = coords.map(c=>c.join(',')).join(' ');
+  const fillPath = 'M0,30 L'+line+' L100,30 Z';
+  return '<svg class="sparkline" viewBox="0 0 100 30">'
+    + '<defs><linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">'
+    + '<stop offset="0%" stop-color="#F5A623" stop-opacity="0.35"/>'
+    + '<stop offset="100%" stop-color="#F5A623" stop-opacity="0"/></linearGradient></defs>'
+    + '<path class="fill" d="'+fillPath+'"/>'
+    + '<path d="M'+line+'"/></svg>';
+}
+
+async function loadUsers(){
+  const users = await api('/api/users');
+  usersCache = users;
+
+  let active=0, upTotal=0, downTotal=0;
+  users.forEach(u=>{ if(u.enabled) active++; upTotal+=u.traffic.uplink; downTotal+=u.traffic.downlink; });
+  document.getElementById('agg-active').textContent = active;
+  document.getElementById('agg-up').textContent = formatBytes(upTotal);
+  document.getElementById('agg-down').textContent = formatBytes(downTotal);
+
+  const grid = document.getElementById('cards-grid');
+  grid.innerHTML = '<div class="card card-add" onclick="openAdd()"><div class="add-glyph">+</div><div>کاربر جدید</div></div>';
+
+  for(const u of users){
+    const card = document.createElement('div');
+    card.className = 'card user-card' + (u.enabled ? '' : ' is-disabled');
+    card.innerHTML = `
+      <div class="card-head">
+        <span class="status-dot ${u.enabled?'on pulsing':''}"></span>
+        <span class="user-name">${escapeHTML(u.name)}</span>
+      </div>
+      <div class="spark-holder">${sparklineSVG([])}</div>
+      <div class="stat-row">
+        <span>آپلود <span class="mono">${formatBytes(u.traffic.uplink)}</span></span>
+        <span>دانلود <span class="mono">${formatBytes(u.traffic.downlink)}</span></span>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-ghost" onclick="openDetail(${u.id})">نمودار</button>
+        <button class="btn btn-ghost" onclick="copyLink(${u.id})">کپی لینک</button>
+        <button class="btn btn-ghost" onclick="toggleUser(${u.id})">${u.enabled?'غیرفعال':'فعال'}</button>
+        <button class="btn btn-danger" onclick="removeUser(${u.id})">حذف</button>
+      </div>
+    `;
+    grid.appendChild(card);
+
+    api('/api/users/'+u.id+'/history').then(hist=>{
+      const holder = card.querySelector('.spark-holder');
+      if(holder) holder.innerHTML = sparklineSVG(hist);
+    }).catch(()=>{});
+  }
+
+  if(users.length===0){
+    grid.insertAdjacentHTML('beforeend', '<div class="empty-hint" style="grid-column:1/-1">هنوز کاربری نساختی. با دکمه بالا شروع کن.</div>');
+  }
+}
+
+function escapeHTML(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+async function openDetail(id){
+  currentDetailId = id;
+  const u = usersCache.find(x=>x.id===id);
+  document.getElementById('detail-title').textContent = u.name;
+  document.getElementById('detail-link').textContent = u.link;
+  document.getElementById('detail-overlay').classList.remove('hidden');
+
+  const hist = await api('/api/users/'+id+'/history');
+  const ctx = document.getElementById('detail-chart').getContext('2d');
+  if(detailChart) detailChart.destroy();
+
+  if(hist.length===0){
+    detailChart = null;
+    return;
+  }
+
+  detailChart = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: hist.map(h=> new Date(h.ts+'Z').toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'})),
+      datasets:[
+        { label:'آپلود', data:hist.map(h=>+(h.uplink/1024/1024).toFixed(2)), borderColor:'#F5A623', backgroundColor:'rgba(245,166,35,.1)', tension:.35, fill:true, pointRadius:0 },
+        { label:'دانلود', data:hist.map(h=>+(h.downlink/1024/1024).toFixed(2)), borderColor:'#34D399', backgroundColor:'rgba(52,211,153,.08)', tension:.35, fill:true, pointRadius:0 }
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{ legend:{ labels:{ color:'#8B93A1', font:{family:'Vazirmatn'} } } },
+      scales:{
+        x:{ ticks:{ color:'#8B93A1' }, grid:{ color:'#262B35' } },
+        y:{ ticks:{ color:'#8B93A1' }, grid:{ color:'#262B35' }, title:{display:true, text:'مگابایت', color:'#8B93A1'} }
+      }
+    }
+  });
+}
+function closeDetail(){ document.getElementById('detail-overlay').classList.add('hidden'); }
+
+function startPulse(){
+  const canvas = document.getElementById('pulse-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let t = 0;
+  function draw(){
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+    ctx.beginPath();
+    ctx.strokeStyle = '#F5A623';
+    ctx.lineWidth = 2;
+    for(let x=0;x<w;x++){
+      const y = h/2 + Math.sin((x+t)*0.09)*10*Math.sin(t*0.02) + Math.sin((x+t)*0.02)*4;
+      x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    t += reduced ? 0 : 1.4;
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+api('/api/users').then(()=>showMain()).catch(()=>showLogin());
+</script>
+</body>
+</html>
